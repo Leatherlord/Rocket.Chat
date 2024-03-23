@@ -6,6 +6,8 @@ import { useTranslation } from '@rocket.chat/ui-contexts';
 import React, { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { MultiSelectInput } from './MultiSelectInput';
+
 type MessageSearchFormProps = {
 	provider: IMessageSearchProvider;
 	onSearch: (params: { searchText: string; globalSearch: boolean }) => void;
@@ -56,12 +58,21 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 			<Box is='form' onSubmit={submitHandler}>
 				<Field>
 					<FieldRow>
-						<TextInput
+						{/* <TextInput
 							addon={<Icon name='magnifier' size='x20' />}
 							placeholder={t('Search_Messages')}
 							aria-label={t('Search_Messages')}
 							autoComplete='off'
 							{...register('searchText')}
+						/> */}
+						<MultiSelectInput
+							inputPlaceholder='Search'
+							values={[{ value: 'Hello!', key: 4 }]}
+							options={[
+								{ value: 'Russia', key: 0 },
+								{ value: 'Belarus', key: 1 },
+								{ value: 'Kazakhstan', key: 2 },
+							]}
 						/>
 					</FieldRow>
 					{provider.description && <FieldHint dangerouslySetInnerHTML={{ __html: t(provider.description as TranslationKey) }} />}
