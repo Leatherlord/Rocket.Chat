@@ -18,11 +18,14 @@ import { useRoomSubscription } from '../../../contexts/RoomContext';
 import { useMessageSearchQuery } from '../hooks/useMessageSearchQuery';
 
 type MessageSearchProps = {
+	query: {
+		selected: string[];
+		rejected: string[];
+	}[];
 	searchText: string;
-	globalSearch: boolean;
 };
 
-const MessageSearch = ({ searchText, globalSearch }: MessageSearchProps): ReactElement => {
+const MessageSearch = ({ searchText, query }: MessageSearchProps): ReactElement => {
 	const t = useTranslation();
 	const formatDate = useFormatDate();
 	const pageSize = useSetting<number>('PageSize') ?? 10;
@@ -30,7 +33,7 @@ const MessageSearch = ({ searchText, globalSearch }: MessageSearchProps): ReactE
 	const showUserAvatar = !!useUserPreference<boolean>('displayAvatars');
 
 	const subscription = useRoomSubscription();
-	const messageSearchQuery = useMessageSearchQuery({ searchText, limit, globalSearch });
+	const messageSearchQuery = useMessageSearchQuery({ query, limit, globalSearch: false });
 
 	return (
 		<Box display='flex' flexDirection='column' flexGrow={1} flexShrink={1} flexBasis={0}>

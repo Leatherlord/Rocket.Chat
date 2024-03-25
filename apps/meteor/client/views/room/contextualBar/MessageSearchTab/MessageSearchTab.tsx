@@ -19,7 +19,8 @@ const MessageSearchTab = () => {
 
 	const { closeTab } = useRoomToolbox();
 
-	const [{ searchText, globalSearch }, handleSearch] = useState({ searchText: '', globalSearch: false });
+	const [{ searchText }, handleSynonym] = useState({ searchText: '' });
+	const [query, setQuery] = useState<{ selected: string[]; rejected: string[] }[]>([]);
 
 	const t = useTranslation();
 
@@ -33,8 +34,8 @@ const MessageSearchTab = () => {
 			<ContextualbarContent flexShrink={1} flexGrow={1} paddingInline={0}>
 				{providerQuery.isSuccess && (
 					<>
-						<MessageSearchForm provider={providerQuery.data} onSearch={handleSearch} />
-						<MessageSearch searchText={searchText} globalSearch={globalSearch} />
+						<MessageSearchForm provider={providerQuery.data} onSynonym={handleSynonym} setQuery={setQuery} />
+						<MessageSearch searchText={searchText} query={query} />
 					</>
 				)}
 				{providerQuery.isError && (

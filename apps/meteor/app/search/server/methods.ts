@@ -21,7 +21,14 @@ declare module '@rocket.chat/ui-contexts' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		'rocketchatSearch.getProvider'(): IMessageSearchProvider | undefined;
-		'rocketchatSearch.search'(text: string, context: { uid?: IUser['_id']; rid: IRoom['_id'] }, payload: unknown): Promise<ISearchResult>;
+		'rocketchatSearch.search'(
+			query: {
+				selected: string[];
+				rejected: string[];
+			}[],
+			context: { uid?: IUser['_id']; rid: IRoom['_id'] },
+			payload: unknown,
+		): Promise<ISearchResult>;
 		'rocketchatSearch.synonyms'(text: string): Promise<ISynonymsResult>;
 		'rocketchatSearch.suggest'(
 			text: string,
@@ -58,17 +65,23 @@ Meteor.methods<ServerMethods>({
 	 * @param context the context (uid, rid)
 	 * @param payload custom payload (e.g. for paging)
 	 */
-	async 'rocketchatSearch.search'(text, context, payload) {
+	async 'rocketchatSearch.search'(query, context, payload) {
 		payload = payload !== null ? payload : undefined; // TODO is this cleanup necessary?
 
 		if (!searchProviderService.activeProvider) {
 			throw new Error('Provider currently not active');
 		}
 
-		SearchLogger.debug({ msg: 'search', text, context, payload });
+		SearchLogger.debug({ msg: 'search', query, context, payload });
+
+		let searchRegex = '';
+		query.forEach((item) => {
+			searchRegex = searchRegex ? `${searchRegex}|${item.selected[0]}` : `${item.selected[0]}`;
+		});
+		searchRegex = `/${searchRegex}/`;
 
 		return new Promise<IRawSearchResult>((resolve, reject) => {
-			searchProviderService.activeProvider?.search(text, context, payload, (error, data) => {
+			searchProviderService.activeProvider?.search(searchRegex, context, payload, (error, data) => {
 				if (error) {
 					return reject(error);
 				}

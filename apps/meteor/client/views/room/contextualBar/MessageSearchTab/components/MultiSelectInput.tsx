@@ -178,7 +178,19 @@ export const MultiSelectInput = forwardRef<HTMLInputElement, MultiSelectInputPro
 								<span>{option.value}</span>
 							</li>
 						))}
-						<input type='button' onClick={onApprove} value='Approve' />
+						<input
+							type='button'
+							onClick={(event) => {
+								event.stopPropagation();
+								onApprove?.();
+								handleExpansion(false);
+								const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+								nativeInputValueSetter?.call(inputRef.current, '');
+								inputRef.current.dispatchEvent(new Event('input', { bubbles: true }));
+								// setInputValue('');
+							}}
+							value='Approve'
+						/>
 					</ul>
 				)}
 			</div>

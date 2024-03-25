@@ -4,11 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useRoom } from '../../../contexts/RoomContext';
 
 export const useMessageSearchQuery = ({
-	searchText,
+	query,
 	limit,
 	globalSearch,
 }: {
-	searchText: string;
+	query: {
+		selected: string[];
+		rejected: string[];
+	}[];
 	limit: number;
 	globalSearch: boolean;
 }) => {
@@ -20,9 +23,9 @@ export const useMessageSearchQuery = ({
 
 	const searchMessages = useMethod('rocketchatSearch.search');
 	return useQuery(
-		['rooms', room._id, 'message-search', { uid, rid: room._id, searchText, limit, globalSearch }] as const,
+		['rooms', room._id, 'message-search', { uid, rid: room._id, query, limit, globalSearch }] as const,
 		async () => {
-			const result = await searchMessages(searchText, { uid, rid: room._id }, { limit, searchAll: globalSearch });
+			const result = await searchMessages(query, { uid, rid: room._id }, { limit, searchAll: globalSearch });
 			return result.message?.docs ?? [];
 		},
 		{

@@ -3,7 +3,7 @@ import { Box, Field, FieldLabel, FieldRow, FieldHint, ToggleSwitch } from '@rock
 import { useDebouncedCallback, useMutableCallback, useUniqueId } from '@rocket.chat/fuselage-hooks';
 import type { TranslationKey } from '@rocket.chat/ui-contexts';
 import { useTranslation } from '@rocket.chat/ui-contexts';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { useSynonymsQuery } from '../hooks/useSynonymsQuery';
@@ -12,10 +12,11 @@ import { MultiSelectInput } from './MultiSelectInput';
 
 type MessageSearchFormProps = {
 	provider: IMessageSearchProvider;
-	onSearch: (params: { searchText: string; globalSearch: boolean }) => void;
+	onSynonym: (params: { searchText: string }) => void;
+	setQuery: (query: { selected: string[]; rejected: string[] }[]) => void;
 };
 
-const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
+const MessageSearchForm = ({ provider, onSynonym, setQuery }: MessageSearchFormProps) => {
 	const { handleSubmit, register, setFocus, control } = useForm({
 		defaultValues: {
 			searchText: '',
@@ -27,19 +28,18 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 		setFocus('searchText');
 	}, [setFocus]);
 
-	const debouncedOnSearch = useDebouncedCallback(useMutableCallback(onSearch), 300);
+	const debouncedOnSynonym = useDebouncedCallback(useMutableCallback(onSynonym), 300);
 
-	const submitHandler = handleSubmit(({ searchText, globalSearch }) => {
-		debouncedOnSearch.cancel();
-		onSearch({ searchText, globalSearch });
+	const submitHandler = handleSubmit(({ searchText }) => {
+		debouncedOnSynonym.cancel();
+		onSynonym({ searchText });
 	});
 
 	const searchText = useWatch({ control, name: 'searchText' });
-	const globalSearch = useWatch({ control, name: 'globalSearch' });
 
 	useEffect(() => {
-		debouncedOnSearch({ searchText, globalSearch });
-	}, [debouncedOnSearch, searchText, globalSearch]);
+		debouncedOnSynonym({ searchText });
+	}, [debouncedOnSynonym, searchText]);
 
 	const globalSearchEnabled = provider.settings.GlobalSearchEnabled;
 	const globalSearchToggleId = useUniqueId();
@@ -58,6 +58,24 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 	const [selected, setSelected] = useState<ValueType[]>([]);
 
 	useEffect(() => console.log(values), [values]);
+
+	const handleSearch = useCallback(
+		(
+			values: (ValueType & {
+				selected: ValueType[];
+				rejected: ValueType[];
+			})[],
+		) => {
+			console.log('Handler!', values);
+			setQuery(
+				values.map((value) => ({
+					selected: value.selected.map((item) => item.value),
+					rejected: value.rejected.map((item) => item.value),
+				})),
+			);
+		},
+		[setQuery],
+	);
 
 	return (
 		<Box
@@ -94,8 +112,8 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 								});
 							}}
 							onApprove={() => {
-								setValues((prev) => [
-									...prev,
+								const newR = [
+									...values,
 									{
 										value: searchText,
 										key: 228,
@@ -108,11 +126,15 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 										],
 										rejected: synonyms.data?.filter((item) => !selected.includes(item)) ?? [],
 									},
-								]);
+								];
+								setValues(() => newR);
+								handleSearch(newR);
 								setSelected([]);
 							}}
 							onRemove={(value) => {
-								setValues((prev) => prev.filter((item) => item.value !== value.value));
+								const newR = values.filter((item) => item.value !== value.value);
+								setValues(() => newR);
+								handleSearch(newR);
 							}}
 							onInputChange={(event) => {
 								setSelected([]);
