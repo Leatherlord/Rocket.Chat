@@ -280,6 +280,17 @@ class MessageSearchQueryParser {
 			(input: string) => this.consumeMessageText(input),
 		].reduce((text, fn) => fn(text), text);
 
+		// process.stdout.write(`HELLO! ${this.query}\n`);
+		// // this.query.keys.foreach((key) => process.stdout.write(`${key}: ${this.query[key]}`));
+		// for (const [key, value] of Object.entries(this.query)) {
+		// 	process.stdout.write(`${key}:\n`);
+		// 	for (const [kkey, vvalue] of Object.entries(value)) {
+		// 		process.stdout.write(`${kkey}: ${vvalue}\n`);
+		// 	}
+		// }
+		// // const fs = require('node:fs');
+		// // fs.writeFile('/home/selfofly/OUTPUT', `HELLO! ${text}`);
+
 		return {
 			query: this.query,
 			options: this.options,

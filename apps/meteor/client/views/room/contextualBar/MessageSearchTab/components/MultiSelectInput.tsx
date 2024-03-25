@@ -1,7 +1,8 @@
-import React, { memo, useCallback, useRef, useState } from 'react';
+import React, { forwardRef, useCallback, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { useClickOutside } from '../hooks/useClickOutside';
+import { useForwardRef } from '../hooks/useForwardRef';
 import { Chip } from './Chip';
 
 export type ValueType = {
@@ -14,42 +15,61 @@ export type MultiSelectInputProps = {
 	inputPlaceholder?: string;
 	values?: ValueType[];
 	options?: ValueType[];
+	selected?: ValueType[];
 	onSelect?: (value: ValueType) => void;
-	onInputChange?: (value: string) => void;
+	onRemove?: (value: ValueType) => void;
+	onInputChange?: (event: React.ChangeEvent<HTMLImageElement>) => void;
+	onInputBlur?: (event: React.FocusEvent<HTMLInputElement, Element>) => void;
+	inputName?: string;
+	onApprove?: () => void;
 };
 
 // eslint-disable-next-line react/display-name
-export const MultiSelectInput = memo<MultiSelectInputProps>(
-	({ options = [], values = [], onSelect, onInputChange: onInputChangeProp, inputPlaceholder = '' }) => {
+export const MultiSelectInput = forwardRef<HTMLInputElement, MultiSelectInputProps>(
+	(
+		{
+			options = [],
+			values = [],
+			onSelect,
+			onRemove: onRemoveProp,
+			onInputChange: onInputChangeProp,
+			inputPlaceholder = '',
+			onInputBlur,
+			inputName,
+			selected,
+			onApprove,
+		},
+		ref,
+	) => {
 		const [isExpanded, setExpanded] = useState(false);
 		const [inputValue, setInputValue] = useState<string>('');
 
-		const onInputChange = (value: string) => {
-			setInputValue(value);
-			onInputChangeProp?.(value);
-		};
+		const onInputChange = useCallback(
+			(event) => {
+				setInputValue(event.target.value);
+				onInputChangeProp?.(event);
+			},
+			[onInputChangeProp],
+		);
 
 		const insideRef = useRef<HTMLDivElement>(null);
 		const expansionRef = useClickOutside<HTMLDivElement>(() => setExpanded(() => false), [insideRef], [values]);
-		const inputRef = useRef<HTMLInputElement>(null);
+		const inputRef = useForwardRef<HTMLInputElement>(ref);
 
 		const handleExpansion = useCallback(
 			(newExpanded) => {
-				if (!isExpanded) {
-					onInputChange(inputValue);
-				}
 				setExpanded(() => newExpanded);
 			},
-			[setExpanded, inputValue, isExpanded],
+			[setExpanded],
 		);
 
 		const onRemove = useCallback(
 			(e, value) => {
 				e.stopPropagation();
 				e.preventDefault();
-				onSelect?.(value);
+				onRemoveProp?.(value);
 			},
-			[onSelect],
+			[onRemoveProp],
 		);
 
 		return (
@@ -112,7 +132,9 @@ export const MultiSelectInput = memo<MultiSelectInputProps>(
 							value={inputValue}
 							onFocus={() => handleExpansion(true)}
 							onClick={(e) => isExpanded && e.stopPropagation()}
-							onChange={(event) => onInputChange(event.target.value)}
+							onChange={(event) => onInputChange(event)}
+							onBlur={onInputBlur}
+							name={inputName}
 						/>
 					</div>
 				</div>
@@ -150,12 +172,13 @@ export const MultiSelectInput = memo<MultiSelectInputProps>(
 										marginRight: 8,
 									}}
 									type='checkbox'
-									checked={values.includes(option)}
+									checked={selected?.includes(option)}
 									onChange={() => onSelect?.(option)}
 								/>
 								<span>{option.value}</span>
 							</li>
 						))}
+						<input type='button' onClick={onApprove} value='Approve' />
 					</ul>
 				)}
 			</div>

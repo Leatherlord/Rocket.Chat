@@ -1,11 +1,13 @@
 import type { IMessageSearchProvider } from '@rocket.chat/core-typings';
-import { Box, Field, FieldLabel, FieldRow, FieldHint, Icon, TextInput, ToggleSwitch } from '@rocket.chat/fuselage';
+import { Box, Field, FieldLabel, FieldRow, FieldHint, ToggleSwitch } from '@rocket.chat/fuselage';
 import { useDebouncedCallback, useMutableCallback, useUniqueId } from '@rocket.chat/fuselage-hooks';
 import type { TranslationKey } from '@rocket.chat/ui-contexts';
 import { useTranslation } from '@rocket.chat/ui-contexts';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
+import { useSynonymsQuery } from '../hooks/useSynonymsQuery';
+import type { ValueType } from './MultiSelectInput';
 import { MultiSelectInput } from './MultiSelectInput';
 
 type MessageSearchFormProps = {
@@ -44,6 +46,19 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 
 	const t = useTranslation();
 
+	const { onChange: onInputChange, onBlur: onInputBlur, name: inputName, ref: inputRef } = register('searchText');
+
+	const synonyms = useSynonymsQuery({ searchText });
+	const [values, setValues] = useState<
+		(ValueType & {
+			selected: ValueType[];
+			rejected: ValueType[];
+		})[]
+	>([]);
+	const [selected, setSelected] = useState<ValueType[]>([]);
+
+	useEffect(() => console.log(values), [values]);
+
 	return (
 		<Box
 			display='flex'
@@ -63,16 +78,49 @@ const MessageSearchForm = ({ provider, onSearch }: MessageSearchFormProps) => {
 							placeholder={t('Search_Messages')}
 							aria-label={t('Search_Messages')}
 							autoComplete='off'
-							{...register('searchText')}
+							// {...register('searchText')}
 						/> */}
 						<MultiSelectInput
-							inputPlaceholder='Search'
-							values={[{ value: 'Hello!', key: 4 }]}
-							options={[
-								{ value: 'Russia', key: 0 },
-								{ value: 'Belarus', key: 1 },
-								{ value: 'Kazakhstan', key: 2 },
-							]}
+							inputPlaceholder={t('Search_Messages')}
+							values={values}
+							options={synonyms.data}
+							selected={selected}
+							onSelect={(value) => {
+								setSelected((prev) => {
+									if (prev.includes(value)) {
+										return prev.filter((item) => item !== value);
+									}
+									return [...prev, value];
+								});
+							}}
+							onApprove={() => {
+								setValues((prev) => [
+									...prev,
+									{
+										value: searchText,
+										key: 228,
+										selected: [
+											{
+												value: searchText,
+												key: 228,
+											},
+											...selected,
+										],
+										rejected: synonyms.data?.filter((item) => !selected.includes(item)) ?? [],
+									},
+								]);
+								setSelected([]);
+							}}
+							onRemove={(value) => {
+								setValues((prev) => prev.filter((item) => item.value !== value.value));
+							}}
+							onInputChange={(event) => {
+								setSelected([]);
+								onInputChange(event);
+							}}
+							onInputBlur={onInputBlur}
+							ref={inputRef}
+							inputName={inputName}
 						/>
 					</FieldRow>
 					{provider.description && <FieldHint dangerouslySetInnerHTML={{ __html: t(provider.description as TranslationKey) }} />}

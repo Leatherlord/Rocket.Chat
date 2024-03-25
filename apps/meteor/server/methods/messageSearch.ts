@@ -76,6 +76,13 @@ Meteor.methods<ServerMethods>({
 			};
 		}
 
+		for (const [key, value] of Object.entries(query)) {
+			process.stdout.write(`${key}:\n`);
+			for (const [kkey, vvalue] of Object.entries(value)) {
+				process.stdout.write(`    ${kkey}: ${vvalue}\n`);
+			}
+		}
+
 		return {
 			message: {
 				docs: await Messages.find(query, {

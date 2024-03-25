@@ -1,16 +1,28 @@
 import type { IMessageSearchProvider, IMessageSearchSuggestion, IRoom, IUser } from '@rocket.chat/core-typings';
 import type { ServerMethods } from '@rocket.chat/ui-contexts';
 import { Meteor } from 'meteor/meteor';
+import type { ReactNode } from 'react';
 
 import { SearchLogger } from './logger/logger';
 import type { IRawSearchResult, ISearchResult } from './model/ISearchResult';
 import { searchProviderService, validationService } from './service';
+
+type ValueType = {
+	content?: ReactNode;
+	value: string;
+	key: number;
+};
+
+export type ISynonymsResult = {
+	synonyms: ValueType[];
+};
 
 declare module '@rocket.chat/ui-contexts' {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	interface ServerMethods {
 		'rocketchatSearch.getProvider'(): IMessageSearchProvider | undefined;
 		'rocketchatSearch.search'(text: string, context: { uid?: IUser['_id']; rid: IRoom['_id'] }, payload: unknown): Promise<ISearchResult>;
+		'rocketchatSearch.synonyms'(text: string): Promise<ISynonymsResult>;
 		'rocketchatSearch.suggest'(
 			text: string,
 			context: { uid?: IUser['_id']; rid: IRoom['_id'] },
@@ -64,6 +76,46 @@ Meteor.methods<ServerMethods>({
 				return resolve(data);
 			});
 		}).then((result) => validationService.validateSearchResult(result));
+	},
+
+	async 'rocketchatSearch.synonyms'(text) {
+		if (!searchProviderService.activeProvider) {
+			throw new Error('Provider currently not active');
+		}
+
+		SearchLogger.debug({ msg: 'synonyms', text });
+
+		return new Promise<ISynonymsResult>((resolve, _) => {
+			const data = {
+				synonyms:
+					text === 'Hello'
+						? [
+								{
+									value: 'Hello',
+									key: 0,
+								},
+								{
+									value: 'Hi',
+									key: 1,
+								},
+								{
+									value: 'Привет',
+									key: 2,
+								},
+								{
+									value: 'Salut',
+									key: 3,
+								},
+						  ]
+						: [
+								{
+									value: 'Not Hello',
+									key: 0,
+								},
+						  ],
+			};
+			return resolve(data);
+		});
 	},
 
 	async 'rocketchatSearch.suggest'(text, context, payload) {
